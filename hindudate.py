@@ -1,10 +1,75 @@
+# Version 1.2.0
+# Added support for era, year, and year name (prabhavadi)
+
 import numpy as np
 
 TTH_DEG = 12.0
 NAK_DEG = 40/3
 RAS_DEG = 30.0
 
-def encode_date(sayana=None, nirayana=None, candramana=None, sak=0, tithi=None, nakshatra=None):
+ERA_DICT = {
+    'kali' : 0,
+    'shaka' : 1,
+    'vikrama' : 2,
+    'vikrama-gujarat' : 3,
+    'kollam' : 4,
+    None: 31
+}
+
+def encode_date(era=None, year_num=None, year_name=None, sayana=None, nirayana=None, candramana=None, sak=0, tithi=None, nakshatra=None):
+
+    return encode_year(era, year_num, year_name) + encode_date_in_year(sayana, nirayana, candramana, sak, tithi, nakshatra)
+
+def parse_date(val):
+    yrCode = val[:26]
+    dateCode = val[26:]
+    
+    era, year_num, year_name = parse_year(yrCode)
+    sayana, nirayana, candramana, sak, tithi, nakshatra = parse_date_in_year(dateCode)
+
+    return era, year_num, year_name, sayana, nirayana, candramana, sak, tithi, nakshatra
+
+
+def encode_year(era=None, year_num=None, year_name=None):
+    era_str = np.binary_repr(eraToCode(era), 5)
+
+    if year_num == None:
+        yrnum = np.binary_repr(2^15-1, 15)
+    else:
+        yrnum = np.binary_repr(year_num, 15)
+    
+    if year_name == None:
+        yrname = "111111"
+    else: yrname = np.binary_repr(year_name, 6)
+
+    return era_str + yrnum + yrname
+
+def eraToCode(era = None):
+    return ERA_DICT[era]
+
+def codeToEra(code):
+    return next((k for k, v in ERA_DICT.items() if v == code), None)
+
+def parse_year(val):
+    eraCode = int(val[:5],2)
+    yrnum = int(val[5:20],2)
+    yrname = int(val[20:],2)
+
+    era = codeToEra(eraCode)
+    if yrnum == 2^15-1:
+        year_num = None
+    else:
+        year_num = yrnum
+
+    if yrname > 59:
+        year_name = None
+    else:
+        year_name = yrname
+    
+    return era, year_num, year_name
+
+
+def encode_date_in_year(sayana=None, nirayana=None, candramana=None, sak=0, tithi=None, nakshatra=None):
     
     month_dec = encode_month(sayana,nirayana,candramana,sak)
         
@@ -60,7 +125,7 @@ def encode_date(sayana=None, nirayana=None, candramana=None, sak=0, tithi=None, 
         
         return month_tithi(month_dec, tithi_dec, tithi == None)
     
-def parse_date(val):
+def parse_date_in_year(val):
     month_dec = int(val[:11],2)
     tithi_null = bool(int(val[11],2))
     tithi_dec = int(val[12:17],2)
