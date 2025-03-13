@@ -32,7 +32,7 @@ print(encoded_date)
 ### Parsing a Date
 
 ```python
-encoded_date = "0000000101000000010110010100110000111001000010"
+encoded_date = "0000000101000000010110010100101110111000101101"
 (
 era,
 year_num,
